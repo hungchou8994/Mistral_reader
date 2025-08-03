@@ -17,6 +17,7 @@ sentence-transformers>=2.5.1
 
 # PDF Processing
 pypdf>=4.0.1
+PyPDF2>=3.0.0
 
 # Web Interface
 gradio>=4.25.0
@@ -25,6 +26,6 @@ gradio>=4.25.0
 tqdm>=4.65.0
 python-dotenv>=1.0.0
 
-# Optional: For better performance
-# xformers>=0.0.23  # Uncomment if you have GPU
-# flash-attn>=2.5.0  # Uncomment for faster inference
+# Kaggle specific optimizations
+xformers>=0.0.23
+flash-attn>=2.5.0 

@@ -12,7 +12,7 @@ from langchain.chains import RetrievalQA
 from langchain_community.document_loaders import PyPDFLoader
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_community.vectorstores import Chroma
-from langchain.embeddings import HuggingFaceEmbeddings
+from langchain_community.embeddings import HuggingFaceEmbeddings  # Fixed import
 from langchain.prompts import PromptTemplate
 import gradio as gr
 
@@ -39,7 +39,7 @@ class RAGChatbot:
             return hashlib.md5(f.read()).hexdigest()
     
     def get_llm(self):
-        """Get LLM with caching"""
+        """Get LLM with caching - optimized for Kaggle"""
         global llm_cache
         if llm_cache is None:
             logger.info("Loading LLM...")
@@ -50,7 +50,7 @@ class RAGChatbot:
                     dtype=None,
                     load_in_4bit=True,
                     device_map="auto",  # Auto device mapping
-                    llm_int8_enable_fp32_cpu_offload=True,  # Enable CPU offload
+                    # Removed llm_int8_enable_fp32_cpu_offload for compatibility
                 )
 
                 generation_pipe = pipeline(
@@ -98,8 +98,16 @@ class RAGChatbot:
             logger.info(f"Loaded {len(documents)} pages")
             return documents
         except Exception as e:
-            logger.error(f"Error loading PDF: {e}")
-            raise Exception(f"Failed to load PDF: {str(e)}")
+            error_msg = str(e).lower()
+            if "encrypted" in error_msg or "password" in error_msg or "decrypted" in error_msg:
+                logger.error(f"PDF is encrypted: {e}")
+                raise Exception("❌ PDF is encrypted/password protected. Please remove the password protection and try again.")
+            elif "not a pdf" in error_msg:
+                logger.error(f"Invalid PDF file: {e}")
+                raise Exception("❌ Invalid PDF file. Please upload a valid PDF document.")
+            else:
+                logger.error(f"Error loading PDF: {e}")
+                raise Exception(f"❌ Failed to load PDF: {str(e)}")
 
     def split_documents(self, documents: List) -> List:
         """Split documents into chunks with improved parameters"""
@@ -118,33 +126,15 @@ class RAGChatbot:
             raise
 
     def create_vector_store(self, chunks: List, file_hash: str):
-        """Create vector store with caching"""
+        """Create vector store with caching - simplified for Kaggle"""
         cache_file = CACHE_DIR / f"vector_store_{file_hash}.pkl"
         
-        # Check if we have cached vector store
-        if cache_file.exists():
-            try:
-                logger.info("Loading cached vector store...")
-                with open(cache_file, 'rb') as f:
-                    self.vector_store = pickle.load(f)
-                logger.info("Cached vector store loaded")
-                return
-            except Exception as e:
-                logger.warning(f"Failed to load cached vector store: {e}")
-        
-        # Create new vector store
+        # For Kaggle, skip caching to avoid pickle issues
         try:
             logger.info("Creating new vector store...")
             embeddings = self.get_embedding_model()
             self.vector_store = Chroma.from_documents(chunks, embeddings)
-            
-            # Cache the vector store
-            try:
-                with open(cache_file, 'wb') as f:
-                    pickle.dump(self.vector_store, f)
-                logger.info("Vector store cached")
-            except Exception as e:
-                logger.warning(f"Failed to cache vector store: {e}")
+            logger.info("Vector store created successfully")
                 
         except Exception as e:
             logger.error(f"Error creating vector store: {e}")
@@ -237,10 +227,10 @@ class RAGChatbot:
 # Initialize chatbot
 chatbot = RAGChatbot()
 
-# Gradio interface with improved UI
+# Gradio interface optimized for Kaggle
 def create_interface():
     with gr.Blocks(
-        title="🧠 Local RAG Chatbot",
+        title="🧠 RAG Chatbot with Mistral 7B",
         theme=gr.themes.Soft(),
         css="""
         .gradio-container {
@@ -250,7 +240,7 @@ def create_interface():
     ) as interface:
         
         gr.Markdown("""
-        # 🧠 Local RAG Chatbot with Mistral 7B
+        # 🧠 RAG Chatbot with Mistral 7B
         
         Upload a PDF document and ask questions about its content. The system uses advanced AI to provide accurate, context-aware answers.
         """)
@@ -332,8 +322,6 @@ def create_interface():
 if __name__ == "__main__":
     interface = create_interface()
     interface.launch(
-        server_name="0.0.0.0",
-        server_port=7860,
-        share=False,
+        share=True,  # Enable sharing for Kaggle
         show_error=True
-    )
+    ) 

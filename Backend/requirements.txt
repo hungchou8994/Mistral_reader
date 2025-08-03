@@ -1,0 +1,30 @@
+# LangChain Core & Community
+langchain>=0.1.14
+langchain-community>=0.0.27
+
+# Transformers & Torch for LLM
+transformers>=4.40.0
+torch>=2.2.0
+accelerate>=0.27.2
+
+# Unsloth for optimized Mistral
+unsloth>=2024.5.15
+bitsandbytes>=0.42.0
+
+# Sentence Embeddings
+sentence-transformers>=2.5.1
+
+# Vector Store
+chromadb>=0.4.24
+
+# PDF Reading
+pypdf>=4.0.1
+
+# Gradio UI
+gradio>=4.25.0
+
+# Progress bar
+tqdm
+
+# Optional utility
+python-dotenv
